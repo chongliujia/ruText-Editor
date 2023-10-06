@@ -1,1 +1,1 @@
-# -RuText-Editor
+# ruText-Editor

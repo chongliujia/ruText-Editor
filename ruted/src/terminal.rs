@@ -4,7 +4,6 @@ use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::{IntoRawMode, RawTerminal};
 use termion::color;
-use termion::style::Invert;
 
 use crate::Position;
 

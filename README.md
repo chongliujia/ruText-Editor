@@ -2,6 +2,7 @@
 
 ## About The Project
 
+![Alt text](images/project_demo.png)
 
 ## Getting Started
 

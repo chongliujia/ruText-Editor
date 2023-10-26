@@ -1,3 +1,4 @@
+use crate::FileType;
 use crate::Row;
 use crate::Position;
 use crate::SearchDirection;
@@ -10,6 +11,7 @@ pub struct Document {
     rows: Vec<Row>,
     pub file_name: Option<String>,
     dirty: bool,
+    file_type: FileType,
 }
 
 impl Document {
@@ -26,6 +28,7 @@ impl Document {
             rows,
             file_name: Some(filename.to_string()),
             dirty: false,
+            file_type: FileType::default(),
         })
     }
 
@@ -171,5 +174,9 @@ impl Document {
         for row in &mut self.rows {
             row.highlight(word);
         }
+    }
+
+    pub fn file_type(&self) -> String {
+        self.file_type.name()
     }
 }

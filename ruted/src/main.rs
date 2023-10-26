@@ -10,6 +10,7 @@
 
 mod document;
 mod editor;
+mod filetype;
 mod terminal;
 mod row;
 mod highlighting;
@@ -23,6 +24,7 @@ pub use row::Row;
 
 pub use terminal::Terminal;
 
+pub use filetype::FileType;
 
 fn main() {
     Editor::default().run();

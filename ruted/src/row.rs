@@ -237,8 +237,9 @@ impl Row {
                 &highlighting::Type::None
             };
 
-            if c.is_whitespace() 
-                && (prev_is_separator || previous_highlight == &highlighting::Type::Number) {
+            if (c.is_ascii_digit()
+                && (prev_is_separator || previous_highlight == &highlighting::Type::Number) ||
+                (c == &'.' && previous_highlight == &highlighting::Type::Number))) {
                 highlighting.push(highlighting::Type::Number);
             } else {
                 highlighting.push(highlighting::Type::None);

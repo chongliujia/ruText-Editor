@@ -1,5 +1,6 @@
 use crate::SearchDirection;
 use crate::highlighting;
+use crate::HighlightingOptions;
 
 use termion::color;
 
@@ -196,7 +197,7 @@ impl Row {
         None
     }
     
-    pub fn highlight(&mut self, word: Option<&str>) {
+    pub fn highlight(&mut self, word: Option<&str>, opts: HighlightingOptions) {
         let mut highlighting = Vec::new();
         let chars: Vec<char> = self.string.chars().collect();
         let mut matches = Vec::new();
@@ -215,7 +216,8 @@ impl Row {
         }
 
         let mut index = 0;
-        let mut prev_is_separator = true;
+        let mut prev_is_separater = true;
+        let mut in_string = false;
 
         while let Some(c) = chars.get(index) {
             if let Some(word) = word {
@@ -237,15 +239,83 @@ impl Row {
                 &highlighting::Type::None
             };
 
+            if opts.characters() && !in_string && *c == '\'' {
+                prev_is_separater = true;
+                if let Some(next_char) = chars.get(index.saturating_add(1)) {
+                    let closing_index = if *next_char == '\\' {
+                        index.saturating_add(3)
+                    } else {
+                        index.saturating_add(2)
+                    };
+
+                    if let Some(closing_char) = chars.get(closing_index) {
+                        if *closing_char == '\'' {
+                            for _ in 0..=closing_index.saturating_sub(index) {
+                                highlighting.push(highlighting::Type::characters);
+                                index += 1;
+                            }
+                            continue;
+                        }
+                    }
+                };
+
+                highlighting.push(highlighting::Type::None);
+                index += 1;
+                continue;
+            }
+
+            if opts.strings() {
+                if in_string {
+                    highlighting.push(highlighting::Type::String);
+
+                    if *c == '\\' && index < self.len().saturating_sub(1) {
+                        highlighting.push(highlighting::Type::String);
+                        index += 2;
+                        continue;
+                    }
+
+                    if *c == '"' {
+                        in_string = false;
+                        prev_is_separater = true;
+                    } else {
+                        prev_is_separater = false;
+                    }
+
+                    index += 1;
+                    continue;
+                } else if prev_is_separater && *c == '"' {
+                    highlighting.push(highlighting::Type::String);
+
+                    in_string = true;
+                    prev_is_separater = true;
+                    index += 1;
+
+                    continue;
+                }
+            }
+
+            if opts.numbers() {
+                if (c.is_ascii_digit() 
+                    && (prev_is_separater || *previous_highlight == highlighting::Type::Number))
+                    || (*c == '.' && *previous_highlight == highlighting::Type::Number) {
+                   highlighting.push(highlighting::Type::Number);
+               } else {
+                   highlighting.push(highlighting::Type::None);
+               }
+            } else {
+                highlighting.push(highlighting::Type::None);
+
+            }
+
             if (c.is_ascii_digit()
-                && (prev_is_separator || previous_highlight == &highlighting::Type::Number) ||
-                (c == &'.' && previous_highlight == &highlighting::Type::Number))) {
+                && (prev_is_separater || previous_highlight == &highlighting::Type::Number)) 
+                || (c == &'.' && previous_highlight == &highlighting::Type::Number) {
                 highlighting.push(highlighting::Type::Number);
             } else {
                 highlighting.push(highlighting::Type::None);
             }
 
-            prev_is_separator = c.is_ascii_punctuation() || c.is_ascii_whitespace();
+            prev_is_separater = c.is_ascii_punctuation() || c.is_ascii_whitespace();
 
             index += 1;
         }

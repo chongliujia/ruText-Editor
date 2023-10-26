@@ -5,7 +5,10 @@ pub struct FileType {
 
 #[derive(Default)]
 pub struct HighlightingOptions {
-    pub numbers: bool,
+    numbers: bool,
+    strings: bool,
+    characters: bool,
+    comments: bool,
 }
 
 
@@ -29,10 +32,31 @@ impl FileType {
                 name: String::from("Rust"),
                 hl_opts: HighlightingOptions {
                     numbers: true,
+                    strings: true,
+                    characters: true,
+                    comments: true,
                 },
             };
         }
 
         Self::default()
+    }
+}
+
+impl HighlightingOptions {
+    pub fn numbers(self) -> bool {
+        self.numbers
+    }
+
+    pub fn strings(self) -> bool {
+        self.strings
+    }
+
+    pub fn characters(self) -> bool {
+        self.characters
+    }
+
+    pub fn comments(self) -> bool {
+        self.comments
     }
 }

@@ -22,7 +22,7 @@ impl Document {
 
         for value in contents.lines() {
             rows.highlight(file_type.highlighting_options(), None);
-            rows.push(row);
+            rows.push(rows);
         }
 
         Ok(Self{
@@ -116,16 +116,11 @@ impl Document {
     pub fn save(&mut self) -> Result<(), Error> {
         if let Some(file_name) = &self.file_name {
             let mut file = fs::File::create(file_name)?;
-            for row in &self.rows {
-                file.write_all(row.as_bytes())?;
-                file.write_all(b"\n")?;
-            }
-
             self.file_type = FileType::from(file_name);
+
             for row in &mut self.rows {
                 file.write_all(row.as_bytes())?;
                 file.write_all(b"\n")?;
-                
                 row.highlight(self.file_type.highlighting_options(), None);
             }
 

@@ -1,6 +1,7 @@
 # ruText-Editor
 
-This is a text editor in Rust.
+This is a text editor in Rust.  
+
 This is my first project to learn Rust。
 
 ## About The Project

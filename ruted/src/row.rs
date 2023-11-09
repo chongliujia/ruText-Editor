@@ -5,6 +5,7 @@ use crate::HighlightingOptions;
 use termion::color;
 
 use std::cmp;
+use std::path::is_separator;
 
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -12,7 +13,7 @@ use unicode_segmentation::UnicodeSegmentation;
 pub struct Row {
     string: String,
     len: usize,
-    hightlighting: Vec<highlighting::Type>,
+    highlighting: Vec<highlighting::Type>,
     pub is_highlighted: bool,
 }
 
@@ -26,8 +27,8 @@ impl Row {
 
         #[allow(clippy::integer_arithmetic)]
         for (index, grapheme) in self.string[..]
-            .enumerate()
             .graphemes(true)
+            .enumerate()
             .skip(start)
             .take(end - start)
         {
@@ -198,7 +199,7 @@ impl Row {
             while let Some(search_match) = self.find(word, index, SearchDirection::Forward) {
                 if let Some(next_index) = search_match.checked_add(word[..].graphemes(true).count()) {
                     #[allow(clippy::indexing_slicing)]
-                    for i in search_match.next_index {
+                    for i in search_match..next_index {
                         self.highlighting[i] = highlighting::Type::Match;
                     }
 
@@ -249,7 +250,7 @@ impl Row {
         if *index > 0 {
             #[allow(clippy::indexing_slicing, clippy::integer_arithmetic)]
             let prev_char = chars[*index - 1];
-            if !is_separator(prev_char) {
+            if !Self::is_separator(prev_char) {
                 return false;
             }
         }
@@ -258,7 +259,7 @@ impl Row {
             if *index < chars.len().saturating_sub(word.len()) {
                 #[allow(clippy::indexing_slicing, clippy::integer_arithmetic)]
                 let next_char = chars[*index + word.len()];
-                if !is_separator(next_char) {
+                if !Self::is_separator(next_char) {
                     continue;
                 }
             }
@@ -328,6 +329,60 @@ impl Row {
         false
     }
 
+    fn highlight_comment(
+        &mut self,
+        index: &mut usize,
+        opts: &HighlightingOptions,
+        c: char,
+        chars: &[char],
+        ) -> bool {
+        if opts.comments() && c == '/' && *index < chars.len() {
+            if let Some(next_char) = chars.get(index.saturating_add(1)) {
+                if *next_char == '/' {
+                    for _ in *index..chars.len() {
+                        self.highlighting.push(highlighting::Type::Comment);
+                        *index += 1;
+                    }
+
+                    return true;
+                }
+            };
+
+        }
+        false
+    }
+
+    #[allow(clippy::indexing_slicing, clippy::integer_arithmetic)]
+    fn highlighting_multiline_comment(
+        &mut self,
+        index: &mut usize,
+        opts: &HighlightingOptions,
+        c: char,
+        chars: &[char],
+        ) -> bool {
+        if opts.comments() && c == '/' && *index < chars.len() {
+            if let Some(next_char) = chars.get(index.saturating_add(1)) {
+                if *next_char == '*' {
+                    let closing_index = 
+                        if let Some(closing_index) = self.string[*index + 2..].find("*/") {
+                            *index + closing_index + 4
+                        } else {
+                            chars.len()
+                        };
+
+                    for _ in *index..closing_index {
+                        self.highlighting.push(highlighting::Type::MultilineComment);
+                        *index += 1;
+                    }
+
+                    return true;
+                }
+            };
+        }
+
+        false
+    }
+
     fn highlight_string(
         &mut self,
         index: &mut usize,
@@ -335,7 +390,6 @@ impl Row {
         c: char,
         chars: &[char],
         ) -> bool {
-
         if opts.strings() && c == '"' {
             loop {
                 self.highlighting.push(highlighting::Type::String);
@@ -353,24 +407,13 @@ impl Row {
             self.highlighting.push(highlighting::Type::String);
             *index += 1;
             return true;
-
         }
+
         false
     }
 
-    fn highlight_comment(
-        &mut self,
-        index: &mut usize,
-        opts: &HightlightingOptions,
-        c: char,
-        chars: &[char],
-        ) -> bool {
 
-
-
-    }
-
-    fn highlighting_number(
+    fn highlight_number(
         &mut self,
         index: &mut usize,
         opts: &HighlightingOptions,
@@ -475,6 +518,38 @@ impl Row {
         }
 
         self.is_highlighted = true;
+        false
+    }
+
+    #[allow(clippy::indexing_slicing, clippy::integer_arithmetic)]
+    fn highlight_multiline_comment(
+        &mut self,
+        index: &mut usize,
+        opts: &HighlightingOptions,
+        c: char,
+        chars: &[char],
+        ) -> bool {
+        if opts.comments() && c == '/' && *index < chars.len() {
+            if let Some(next_char) = chars.get(index.saturating_add(1)) {
+                if *next_char == '*' {
+                    let closing_index = 
+                        if let Some(closing_index) = self.string[*index + 2..].find("*/") {
+                            *index + closing_index + 4
+                        } else {
+                            chars.len()
+
+                        };
+
+                    for _ in *index..closing_index {
+                        self.highlighting.push(highlighting::Type::MultilineComment);
+                        *index += 1;
+                    }
+
+                    return true;
+                }
+            };
+        }
+
         false
     }
 

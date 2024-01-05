@@ -16,7 +16,7 @@ git clone https://github.com/chongliujia/ruText-Editor.git)
 
 cd ruText-Editor
 
-cargo build
+cargo run
 
 ```
 
